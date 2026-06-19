@@ -1,0 +1,14 @@
+{
+  "company_name": "Apple Inc.",
+  "sector": "Technology",
+  "industry": "Consumer Electronics",
+  "market_cap": 3050000000000,
+  "trailing_pe": 31.2,
+  "forward_pe": 28.4,
+  "price_to_book": 46.0,
+  "profit_margin": 0.262,
+  "revenue_growth": 0.052,
+  "dividend_yield": 0.0046,
+  "beta": 1.21,
+  "summary": "Apple designs and sells consumer electronics, software, and services, anchored by the iPhone with a fast-growing high-margin services segment."
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "title": "NVIDIA Corporation reports quarterly results, reaffirms full-year outlook",
+    "publisher": "Sample Wire",
+    "published": "2026-06-16",
+    "summary": "NVIDIA Corporation posted results broadly in line with expectations and kept its guidance unchanged, citing steady demand.",
+    "url": "https://example.com/nvda/earnings"
+  },
+  {
+    "title": "Analysts weigh NVIDIA Corporation valuation after recent run",
+    "publisher": "Sample Markets",
+    "published": "2026-06-12",
+    "summary": "Commentators are split on whether the current multiple is justified by the growth outlook.",
+    "url": "https://example.com/nvda/valuation"
+  },
+  {
+    "title": "NVIDIA Corporation expands product roadmap at industry event",
+    "publisher": "Sample Tech Daily",
+    "published": "2026-06-05",
+    "summary": "New products were previewed, with availability expected later in the year.",
+    "url": "https://example.com/nvda/roadmap"
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "company_name": "Microsoft Corporation",
+  "sector": "Technology",
+  "industry": "Software\u2014Infrastructure",
+  "market_cap": 3300000000000,
+  "trailing_pe": 35.8,
+  "forward_pe": 30.1,
+  "price_to_book": 12.5,
+  "profit_margin": 0.361,
+  "revenue_growth": 0.155,
+  "dividend_yield": 0.0072,
+  "beta": 0.93,
+  "summary": "Microsoft develops software, cloud (Azure), and productivity platforms. Cloud and AI services are the primary growth engines."
+}
