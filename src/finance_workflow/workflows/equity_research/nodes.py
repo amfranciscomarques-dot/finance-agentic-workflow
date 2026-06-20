@@ -71,12 +71,12 @@ def analyze(state: EquityResearchState) -> dict[str, Any]:
                     ("human", analyst_human_prompt(state["ticker"], state["company_name"], packet)),
                 ]
             )
-            return {"analysis": result.model_dump()}
+            return {"analysis": result.model_dump(), "analysis_used_llm": True}
         except Exception as exc:  # network, auth, parsing — degrade gracefully
             warn(f"LLM analysis failed ({exc}); using deterministic fallback.")
     else:
         step("Analyzing (deterministic offline analyst) …")
-    return {"analysis": _fallback_analysis(state)}
+    return {"analysis": _fallback_analysis(state), "analysis_used_llm": False}
 
 
 def write_memo(state: EquityResearchState) -> dict[str, Any]:
@@ -100,12 +100,12 @@ def write_memo(state: EquityResearchState) -> dict[str, Any]:
                 ]
             )
             text = message.content if isinstance(message.content, str) else str(message.content)
-            return {"memo": text.strip()}
+            return {"memo": text.strip(), "memo_used_llm": True}
         except Exception as exc:
             warn(f"LLM memo drafting failed ({exc}); using template fallback.")
     else:
         step("Drafting memo (template) …")
-    return {"memo": _fallback_memo(state, analysis)}
+    return {"memo": _fallback_memo(state, analysis), "memo_used_llm": False}
 
 
 # --------------------------------------------------------------------------- #

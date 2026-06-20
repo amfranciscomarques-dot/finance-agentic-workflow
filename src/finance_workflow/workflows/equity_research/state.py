@@ -24,4 +24,6 @@ class EquityResearchState(TypedDict, total=False):
 
     # Derived (sequential nodes)
     analysis: dict[str, Any]  # AnalysisResult.model_dump()
+    analysis_used_llm: bool  # whether Claude produced the analysis (vs. fallback)
     memo: str  # final Markdown deliverable
+    memo_used_llm: bool  # whether Claude drafted the memo (vs. template)

@@ -14,7 +14,7 @@ Most "AI agent" demos are a single prompt in a loop. Real workflows need:
 - **A clean tool/data boundary** — data providers that try a live source, then fall back to reproducible sample data, so the workflow always runs.
 - **Structured, typed LLM output** — the analysis step returns a validated Pydantic object, not free text.
 - **Graceful degradation** — with no `ANTHROPIC_API_KEY`, the graph still completes using a deterministic, rule‑based analyst, so a reviewer can run it immediately.
-- **Extensibility** — new finance workflows register themselves and appear in the CLI. The equity‑research workflow is the first of four planned (see [docs/workflows.md](docs/workflows.md)).
+- **Extensibility** — new finance workflows register themselves and appear in the CLI. Two of four planned workflows are implemented today; the remaining two slot in without changing the core (see [docs/workflows.md](docs/workflows.md)).
 
 ---
 
@@ -76,16 +76,32 @@ finwf list
 
 ## How the LLM is wired
 
-The reasoning steps call **Claude Opus 4.8** (`claude-opus-4-8`) through `langchain-anthropic`:
+The reasoning steps are **model-agnostic**: they go through LangChain's
+`init_chat_model`, so you can run them on any supported provider — Anthropic,
+OpenAI, Google, Groq, Mistral, a local Ollama, and more. The default is
+**Claude Opus 4.8** (`claude-opus-4-8`):
 
 ```python
-from langchain_anthropic import ChatAnthropic
+from langchain.chat_models import init_chat_model
 
-llm = ChatAnthropic(model="claude-opus-4-8", max_tokens=4096)
+# provider inferred from the model name (claude-* -> anthropic, gpt-* -> openai, ...)
+llm = init_chat_model("claude-opus-4-8", max_tokens=4096)
 structured = llm.with_structured_output(AnalysisResult)  # validated Pydantic out
 ```
 
-The model id is configurable via `FINWF_MODEL`. See [docs/architecture.md](docs/architecture.md) for the full design and [.env.example](.env.example) for all settings.
+Pick a model with `FINWF_MODEL` (and `FINWF_MODEL_PROVIDER` when the name is
+ambiguous), then install that provider's extra:
+
+```powershell
+pip install -e ".[openai]"
+$env:OPENAI_API_KEY = "sk-..."
+$env:FINWF_MODEL = "gpt-4o"
+finwf run equity-research --ticker MSFT
+```
+
+Available provider extras: `openai`, `google`, `groq`, `mistral`, `ollama`
+(Anthropic works out of the box). See [docs/architecture.md](docs/architecture.md)
+for the full design and [.env.example](.env.example) for all settings.
 
 ---
 
@@ -100,10 +116,12 @@ finance-agentic-workflow/
 │   ├── cli.py             # `finwf` command-line entry point
 │   ├── tools/             # data providers (live + sample fallback) and @tool wrappers
 │   └── workflows/
-│       ├── base.py        # Workflow ABC that every workflow implements
-│       └── equity_research/   # the first concrete workflow (LangGraph)
+│       ├── base.py            # Workflow ABC that every workflow implements
+│       ├── equity_research/   # first workflow (parallel gather → analyze → memo)
+│       └── portfolio/         # second workflow (load → metrics → narrate)
 ├── scripts/generate_samples.py   # reproducible sample-data generator
 ├── examples/run_equity_research.py
+├── examples/run_portfolio.py
 ├── tests/
 └── docs/
 ```
@@ -121,11 +139,11 @@ finance-agentic-workflow/
 | Workflow | Status |
 |---|---|
 | Equity research assistant | ✅ Implemented |
+| Portfolio & risk analytics | ✅ Implemented |
 | Financial document analysis | 🚧 Planned |
-| Portfolio & risk analytics | 🚧 Planned |
 | Market & news monitor | 🚧 Planned |
 
-The framework (registry, tool layer, base classes, CLI) is built so the remaining three plug in without changing the core.
+The framework (registry, tool layer, base classes, CLI) is built so the remaining two plug in without changing the core.
 
 ## License
 

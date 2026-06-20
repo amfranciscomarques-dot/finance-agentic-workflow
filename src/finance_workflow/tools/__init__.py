@@ -10,5 +10,6 @@ from __future__ import annotations
 from .fundamentals import FundamentalsProvider
 from .market_data import MarketDataProvider
 from .news import NewsProvider
+from .portfolio import PortfolioProvider
 
-__all__ = ["MarketDataProvider", "FundamentalsProvider", "NewsProvider"]
+__all__ = ["MarketDataProvider", "FundamentalsProvider", "NewsProvider", "PortfolioProvider"]

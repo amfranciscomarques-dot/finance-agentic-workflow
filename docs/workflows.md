@@ -29,15 +29,27 @@ and summarize highlights and risk factors with citations back to the source.
 - New graph: `load → chunk → extract (structured) → summarize`.
 - Reuses: registry, CLI, `llm.py`, the `Workflow` base, structured-output pattern.
 
-## 🚧 Portfolio & Risk Analytics — `portfolio` (planned)
+## ✅ Portfolio & Risk Analytics — `portfolio`
 
-Take a holdings file (CSV) and compute returns, volatility, drawdown, exposures,
-and simple risk metrics, then have Claude narrate the results. Plays directly to
-fixed-income / ALM analytics.
+**Implemented.** Take a holdings file (CSV) — or inline positions — and compute
+position weights, portfolio-level returns, volatility, max drawdown, sector
+exposures, weighted beta, and concentration (top weight / HHI), then have Claude
+narrate the risks. Plays directly to fixed-income / ALM analytics.
+
+```powershell
+finwf run portfolio --holdings examples/sample_portfolio.csv            # uses Claude if a key is set
+finwf run portfolio --holdings examples/sample_portfolio.csv --offline  # deterministic, no key/network
+```
+
+Output: a Markdown risk report (printed and saved to `outputs/`), plus a
+metadata summary (risk rating, total value, position count, data source, and
+`used_llm` — which reports whether Claude actually produced the assessment or it
+fell back to the deterministic analyst).
 
 - New tool: a `PortfolioProvider` (positions + price history → metrics).
 - New graph: `load_positions → compute_metrics → narrate`.
-- Reuses: `MarketDataProvider`, registry, CLI, memo-writing pattern.
+- Reuses: `MarketDataProvider`, `FundamentalsProvider`, registry, CLI,
+  structured-output + report pattern.
 
 ## 🚧 Market & News Monitor — `monitor` (planned)
 

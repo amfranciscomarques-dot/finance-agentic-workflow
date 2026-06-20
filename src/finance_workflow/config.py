@@ -33,21 +33,22 @@ def _env_flag(name: str, default: bool) -> bool:
 class Settings:
     """Resolved configuration for a single run."""
 
-    anthropic_api_key: str | None = field(
-        default_factory=lambda: os.getenv("ANTHROPIC_API_KEY") or None
-    )
+    #: Model id passed to LangChain's ``init_chat_model``. The provider is
+    #: inferred from the name (``claude-*`` → Anthropic, ``gpt-*`` → OpenAI,
+    #: ``gemini-*`` → Google, …) or set explicitly via ``model_provider`` or the
+    #: ``provider:model`` form (e.g. ``groq:llama-3.3-70b-versatile``).
     model: str = field(default_factory=lambda: os.getenv("FINWF_MODEL", "claude-opus-4-8"))
+    #: Optional explicit provider override (``FINWF_MODEL_PROVIDER``). Needed only
+    #: when the model name doesn't make the provider obvious.
+    model_provider: str | None = field(
+        default_factory=lambda: os.getenv("FINWF_MODEL_PROVIDER") or None
+    )
     max_tokens: int = field(default_factory=lambda: int(os.getenv("FINWF_MAX_TOKENS", "4096")))
     allow_live_data: bool = field(default_factory=lambda: _env_flag("FINWF_ALLOW_LIVE", True))
     output_dir: Path = field(
         default_factory=lambda: Path(os.getenv("FINWF_OUTPUT_DIR", str(DEFAULT_OUTPUT_DIR)))
     )
     samples_dir: Path = field(default=SAMPLES_DIR)
-
-    @property
-    def llm_enabled(self) -> bool:
-        """True when an API key is available for real Claude calls."""
-        return bool(self.anthropic_api_key)
 
 
 def get_settings() -> Settings:

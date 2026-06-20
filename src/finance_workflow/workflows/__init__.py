@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from ..registry import registry
 from .equity_research import EquityResearchWorkflow
+from .portfolio import PortfolioWorkflow
 
 # Register built-in workflows (idempotent: this module is imported once).
 registry.register(EquityResearchWorkflow())
+registry.register(PortfolioWorkflow())
 
 __all__ = ["registry"]

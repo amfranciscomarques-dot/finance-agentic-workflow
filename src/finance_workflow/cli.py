@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import workflows  # noqa: F401 — import for side effect: registers workflows
 from .config import get_settings
-from .llm import llm_available
+from .llm import llm_available, resolve_model_provider
 from .registry import registry, run_workflow
 
 
@@ -38,7 +38,9 @@ def cmd_list(_: argparse.Namespace) -> int:
         for wf in registry.all():
             table.add_row(wf.name, wf.description)
         console.print(table)
-        mode = "Claude (ANTHROPIC_API_KEY set)" if llm_available() else "offline (no API key)"
+        model, provider = resolve_model_provider()
+        label = f"{provider}:{model}" if provider else model
+        mode = f"{label} (API key set)" if llm_available() else "offline (no API key)"
         console.print(f"\nLLM mode: [bold]{mode}[/bold]")
     else:  # pragma: no cover
         for wf in registry.all():
@@ -64,6 +66,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.workflow == "equity-research" and not args.ticker:
         print("error: --ticker is required for equity-research", file=sys.stderr)
         return 2
+    if args.workflow == "portfolio" and not args.holdings:
+        print("error: --holdings is required for portfolio", file=sys.stderr)
+        return 2
 
     if args.offline:
         _print(console, "[dim]Running in offline mode (sample data + deterministic analyst).[/dim]")
@@ -75,9 +80,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
 
     try:
+        # Each workflow's initial_state ignores params it doesn't use (via **_),
+        # so a single passthrough covers every workflow.
         result = run_workflow(
             args.workflow,
             ticker=args.ticker,
+            holdings=args.holdings,
             offline=args.offline,
             news_limit=args.news_limit,
         )
@@ -107,14 +115,19 @@ def _render_result(console, result) -> None:
         from rich.markdown import Markdown
         from rich.panel import Panel
 
-        summary = (
-            f"[bold]{meta.get('company')} ({meta.get('ticker')})[/bold]\n"
-            f"Recommendation: [bold]{meta.get('recommendation')}[/bold] "
-            f"({meta.get('confidence')} confidence)\n"
-            f"As of: {meta.get('as_of')}   "
-            f"LLM: {'yes' if meta.get('used_llm') else 'no (deterministic)'}\n"
-            f"Sources: {meta.get('sources')}"
-        )
+        if meta.get("recommendation"):  # equity-research style summary
+            summary = (
+                f"[bold]{meta.get('company')} ({meta.get('ticker')})[/bold]\n"
+                f"Recommendation: [bold]{meta.get('recommendation')}[/bold] "
+                f"({meta.get('confidence')} confidence)\n"
+                f"As of: {meta.get('as_of')}   "
+                f"LLM: {'yes' if meta.get('used_llm') else 'no (deterministic)'}\n"
+                f"Sources: {meta.get('sources')}"
+            )
+        else:  # generic summary for other workflows (e.g. portfolio)
+            llm = "yes" if meta.get("used_llm") else "no (deterministic)"
+            rows = [f"{k}: {v}" for k, v in meta.items() if k != "used_llm"]
+            summary = "\n".join(rows + [f"LLM: {llm}"])
         console.print(Panel(summary, title="Result", title_align="left"))
         console.print(Markdown(result.markdown))
     else:  # pragma: no cover
@@ -125,9 +138,10 @@ def _save(result, output_dir: Path, explicit: str | None) -> Path:
     if explicit:
         path = Path(explicit)
     else:
-        ticker = result.metadata.get("ticker", "output")
         stamp = date.today().isoformat()
-        path = output_dir / f"{ticker}_{result.workflow}_{stamp}.md"
+        ticker = result.metadata.get("ticker")
+        stem = f"{ticker}_{result.workflow}" if ticker else result.workflow
+        path = output_dir / f"{stem}_{stamp}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(result.markdown, encoding="utf-8")
     return path
@@ -164,7 +178,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_run = sub.add_parser("run", help="Run a workflow.")
     p_run.add_argument("workflow", help="Workflow name, e.g. equity-research")
-    p_run.add_argument("--ticker", help="Ticker symbol, e.g. AAPL")
+    p_run.add_argument("--ticker", help="Ticker symbol, e.g. AAPL (equity-research)")
+    p_run.add_argument(
+        "--holdings", help="Path to a holdings CSV with ticker,shares columns (portfolio)"
+    )
     p_run.add_argument(
         "--offline",
         action="store_true",
