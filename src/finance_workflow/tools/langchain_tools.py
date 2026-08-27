@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from langchain_core.tools import tool
 
+from .document import DocumentProvider
 from .fundamentals import FundamentalsProvider
 from .market_data import MarketDataProvider
+from .monitor import MonitorProvider
 from .news import NewsProvider
 
 
@@ -32,5 +34,33 @@ def recent_news(ticker: str, limit: int = 5) -> dict:
     return NewsProvider().get(ticker, limit=limit)
 
 
+@tool
+def document_analysis_extract(
+    ticker: str | None = None, file_path: str | None = None
+) -> dict:
+    """Ingest a financial filing document, chunk it, and extract key metrics with citations."""
+    provider = DocumentProvider()
+    doc = provider.load_document(source=file_path, ticker=ticker)
+    chunks = provider.chunk(doc["text"])
+    return provider.extract_metrics_deterministic(
+        chunks,
+        company_name=doc.get("company_name", ""),
+        ticker=doc.get("ticker"),
+    )
+
+
+@tool
+def market_monitor_scan(tickers: str | None = None) -> dict:
+    """Scan a watchlist or universe of tickers for movers, volatility, and news."""
+    ticker_list = [t.strip().upper() for t in tickers.split(",")] if tickers else None
+    return MonitorProvider().scan_universe(ticker_list)
+
+
 #: Convenient bundle for binding to a tool-calling agent.
-TOOLS = [market_snapshot, company_fundamentals, recent_news]
+TOOLS = [
+    market_snapshot,
+    company_fundamentals,
+    recent_news,
+    document_analysis_extract,
+    market_monitor_scan,
+]

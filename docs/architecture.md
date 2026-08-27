@@ -13,10 +13,10 @@ decisions are the point of the portfolio piece.
                  ┌────────────────┼────────────────┐
                  ▼                ▼                ▼
             tools/ providers   llm.py (Claude)   prompts/schema
-            (live + sample)    via langchain-anthropic
+            (live + sample)    via init_chat_model
 ```
 
-- **`registry`** maps a name (`equity-research`) to a `Workflow` instance.
+- **`registry`** maps a name (`equity-research`, `portfolio`, `doc-analysis`, `monitor`) to a `Workflow` instance.
 - A **`Workflow`** knows how to `build()` a compiled LangGraph graph, construct
   `initial_state(**params)`, and turn the final state into a Markdown
   deliverable (`result_markdown`) plus a small `metadata` summary.
@@ -25,7 +25,9 @@ decisions are the point of the portfolio piece.
 - The CLI (and `examples/`) call `run_workflow(name, **params)`, which builds the
   graph, invokes it, and wraps the output in a `WorkflowResult`.
 
-## The graph (equity research)
+## Graph Anatomy
+
+### 1. Equity Research (`equity-research`)
 
 ```
 START ─┬─> gather_market_data ─┐
@@ -33,43 +35,34 @@ START ─┬─> gather_market_data ─┐
        └─> gather_news ─────────┘
 ```
 
-LangGraph executes in **supersteps**. The three `gather_*` nodes have no
-dependencies on each other, so they run in parallel in the first superstep.
-`analyze` has three incoming edges and therefore runs once, only after all three
-gather nodes complete (fan-in). `write_memo` follows `analyze`.
+LangGraph executes in **supersteps**. The three `gather_*` nodes run in parallel in the first superstep.
+`analyze` has three incoming edges and runs once after all three complete (fan-in). `write_memo` follows.
 
-### Why each gather node writes a distinct state key
-
-Parallel nodes that write the *same* state key would need a reducer (LangGraph
-otherwise raises on concurrent updates). We sidestep that entirely: each gather
-node writes its own key (`market` / `fundamentals` / `news`). Simpler to read,
-no reducer to reason about.
-
-### Structured analysis
-
-`analyze` uses `ChatAnthropic(...).with_structured_output(AnalysisResult)`, so
-Claude returns a **validated Pydantic object** — `thesis`, `strengths`, `risks`,
-`valuation_view`, `recommendation` (`Buy`/`Hold`/`Sell`), `confidence`. The rest
-of the graph never parses free text.
-
-`write_memo` then turns that structured view plus the underlying data packet into
-a readable Markdown memo.
-
-## The graph (portfolio)
+### 2. Portfolio Risk Analytics (`portfolio`)
 
 ```
 START ─> load_positions ─> compute_metrics ─> narrate ─> END
 ```
 
-A linear pipeline — no fan-out, so every state key is written by exactly one node
-and no reducer is needed. `load_positions` normalizes the holdings (an inline
-`{ticker, shares}` list or a `ticker,shares` CSV), `compute_metrics` prices them
-via `PortfolioProvider` and derives weights, trailing returns, volatility, max
-drawdown, sector exposure, weighted beta, and concentration, and `narrate` forms a
-structured `PortfolioAssessment` — with Claude, or the deterministic fallback — and
-renders the Markdown risk report.
+A linear pipeline: `load_positions` normalizes holdings, `compute_metrics` prices them via `PortfolioProvider` and derives portfolio analytics, and `narrate` forms a structured `PortfolioAssessment` and renders the risk report.
 
-## The data layer (`tools/`)
+### 3. Financial Document Analysis (`doc-analysis`)
+
+```
+START ─> load_document ─> chunk_document ─> extract_financials ─> summarize ─> END
+```
+
+A document analysis pipeline: `load_document` ingests a filing or PDF (or falls back to bundled sample filings), `chunk_document` creates indexed chunks with section headers, `extract_financials` extracts structured metrics and risks with chunk citations (via Claude or deterministic extraction), and `summarize` formats an analytical memo.
+
+### 4. Market & News Monitor (`monitor`)
+
+```
+START ─> scan_universe ─> detect_movers ─> generate_digest ─> END
+```
+
+A market surveillance pipeline: `scan_universe` queries price snapshots and headlines across the universe, `detect_movers` ranks top gainers, losers, and volatility outliers, and `generate_digest` synthesizes a structured watchlist digest and markdown report.
+
+## The Data Layer (`tools/`)
 
 Each provider exposes one job and a uniform contract: **try live, fall back to
 sample, and always tag the `source`.**
@@ -79,6 +72,9 @@ sample, and always tag the `source`.**
 | `MarketDataProvider` | `yfinance` history | `data/samples/<T>/prices.csv` | price snapshot dict |
 | `FundamentalsProvider` | `yfinance` `.info` | `data/samples/<T>/fundamentals.json` | profile dict |
 | `NewsProvider` | `yfinance` `.news` | `data/samples/<T>/news.json` | `{source, items}` |
+| `PortfolioProvider` | composes Market & Fundamentals | bundled sample price CSVs | portfolio metrics dict |
+| `DocumentProvider` | file / PDF loader | `data/samples/<T>/filing_10k.txt` | doc payload, chunks, extracted metrics |
+| `MonitorProvider` | composes Market, Fund & News | bundled sample data | universe scan & mover rankings |
 
 Live failures (no network, bad ticker, `yfinance` not installed) are caught and
 silently downgraded to sample data — the workflow never hard-fails on data.
@@ -86,13 +82,7 @@ silently downgraded to sample data — the workflow never hard-fails on data.
 The same providers are also exposed as LangChain `@tool`s in
 `tools/langchain_tools.py`, ready for a tool-calling agent variant.
 
-`PortfolioProvider` sits one level up: it *composes* `MarketDataProvider` and
-`FundamentalsProvider` to turn positions into analytics, so it inherits their
-fallback and `source` tagging. Because a book can price some holdings live and
-others from samples, its tag carries a third value — `mixed` — alongside `live`
-and `sample`.
-
-## The LLM layer (`llm.py`)
+## The LLM Layer (`llm.py`)
 
 The reasoning nodes are **provider-agnostic**. `get_llm()` builds the client via
 LangChain's `init_chat_model`, so swapping models is configuration, not code —
@@ -107,45 +97,24 @@ the workflows never name a provider.
   key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …), so the offline gate is correct
   regardless of which provider you target; keyless providers (local Ollama) are
   always available.
-- We **don't** send `temperature` or a `thinking` budget — some models (e.g.
-  Anthropic Opus 4.8) reject them, and leaving them unset keeps the factory
-  portable. Pass overrides explicitly if a model needs them.
 - `langchain` and the provider integration package are imported lazily, so the
   data layer, registry, and `finwf list` work even without the LLM stack installed.
 
-## Graceful degradation (offline mode)
+## Graceful Degradation (Offline Mode)
 
 Every reasoning node checks `state["use_llm"]`:
 
 - **With a key** (and not `--offline`): call Claude.
-- **Without a key** (or `--offline`): use a transparent, rule-based analyst and a
-  templated memo.
+- **Without a key** (or `--offline`): use transparent, rule-based reasoning engines and templated memos.
 
-This means a reviewer can `pip install`, generate samples, and get a complete
-end-to-end run with **no API key and no internet**. If a live Claude call fails
-mid-run (network/auth), the node catches it and falls back rather than crashing —
-and records that it did. The run's `used_llm` flag reports whether Claude
-*actually* produced the output, not merely that it was requested, so an `--offline`
-run and a run whose live call failed both honestly report `used_llm: false`.
+This means a reviewer can `pip install`, generate samples, and get complete
+end-to-end runs for all 4 workflows with **no API key and no internet**. If a live
+Claude call fails mid-run (network/auth), the node catches it and falls back rather
+than crashing — and records that it did. The run's `used_llm` flag reports whether
+Claude *actually* produced the output, not merely that it was requested.
 
 ## Configuration (`config.py`)
 
 All settings are environment-driven (`Settings` frozen dataclass): API key,
 model, max tokens, whether live data is allowed, output directory. See
 [.env.example](../.env.example).
-
-## Design decisions, briefly
-
-- **Deterministic DAG over a free-roaming agent.** For research that must be
-  auditable, an explicit graph you can read and test beats an open agent loop.
-  The tool-calling variant is documented as an extension, not the default.
-- **Provenance everywhere.** The data `source` (`live`, `sample`, or `mixed`)
-  flows from the provider into the deliverable, and `used_llm` records whether
-  Claude actually ran vs. the deterministic fallback — so the output is never
-  silently synthetic, and the metadata never claims an LLM view it didn't produce.
-  Both workflows report it honestly: equity-research's `used_llm` is true only when
-  Claude produced *both* the structured analysis and the memo (if either node
-  degrades, it reports false).
-- **Small `Workflow` surface.** Four methods. That's what makes the other three
-  planned workflows cheap to add.
-- **Offline-first.** A portfolio reviewer should be able to run it in 60 seconds.

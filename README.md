@@ -1,6 +1,6 @@
 # Finance Agentic Workflow
 
-> A documented, extensible **LangGraph** framework for building finance AI workflows — starting with an autonomous **equity‑research assistant** that gathers market data, fundamentals, and news, reasons over them with Claude, and drafts an investment memo.
+> A documented, extensible **LangGraph** framework for building finance AI workflows — spanning autonomous **equity research**, **portfolio risk analytics**, **financial document analysis**, and a **market/news monitor**.
 
 This repository is a **portfolio project**. Its goal is to demonstrate how I design, document, and ship agentic AI workflows: clean graph orchestration, a pluggable tool/data layer with real‑API‑plus‑offline‑fallback, structured LLM outputs, and a CLI you can run end‑to‑end with **zero setup** (no API key, no internet — it falls back to bundled sample data and a deterministic analyst).
 
@@ -10,33 +10,38 @@ This repository is a **portfolio project**. Its goal is to demonstrate how I des
 
 Most "AI agent" demos are a single prompt in a loop. Real workflows need:
 
-- **Deterministic orchestration** you can read, test, and reason about — here, a LangGraph state graph with explicit nodes and a fan‑out/fan‑in shape.
+- **Deterministic orchestration** you can read, test, and reason about — here, LangGraph state graphs with explicit nodes, fan-out/fan-in shapes, and sequential pipelines.
 - **A clean tool/data boundary** — data providers that try a live source, then fall back to reproducible sample data, so the workflow always runs.
-- **Structured, typed LLM output** — the analysis step returns a validated Pydantic object, not free text.
-- **Graceful degradation** — with no `ANTHROPIC_API_KEY`, the graph still completes using a deterministic, rule‑based analyst, so a reviewer can run it immediately.
-- **Extensibility** — new finance workflows register themselves and appear in the CLI. Two of four planned workflows are implemented today; the remaining two slot in without changing the core (see [docs/workflows.md](docs/workflows.md)).
+- **Structured, typed LLM output** — analysis steps return validated Pydantic objects, not free text.
+- **Graceful degradation** — with no `ANTHROPIC_API_KEY`, every graph still completes using deterministic, rule-based reasoning engines and templates, so a reviewer can run it immediately.
+- **Extensibility** — new finance workflows register themselves and appear in the CLI. All 4 core workflows are implemented today (see [docs/workflows.md](docs/workflows.md)).
 
 ---
 
-## The first workflow: Equity Research Assistant
+## The Four Workflows
 
 ```mermaid
-flowchart TD
-    START((start)) --> M[gather_market_data]
-    START --> F[gather_fundamentals]
-    START --> N[gather_news]
-    M --> A[analyze · LLM → structured view]
-    F --> A
-    N --> A
-    A --> W[write_memo · LLM → markdown]
-    W --> END((end))
+flowchart LR
+    subgraph Equity Research
+        E1[gather market/fund/news] --> E2[analyze view] --> E3[write memo]
+    end
+    subgraph Portfolio Analytics
+        P1[load positions] --> P2[compute risk metrics] --> P3[narrate report]
+    end
+    subgraph Doc Analysis
+        D1[load doc] --> D2[chunk text] --> D3[extract metrics & citations] --> D4[summarize memo]
+    end
+    subgraph Market Monitor
+        M1[scan universe] --> M2[detect movers] --> M3[generate digest]
+    end
 ```
 
-1. **Gather** market data, fundamentals, and recent news *in parallel* (LangGraph superstep fan‑out).
-2. **Analyze** — Claude reads the gathered context and emits a *structured* view: thesis, strengths, risks, valuation view, recommendation, and confidence (validated with Pydantic).
-3. **Write memo** — Claude drafts a readable Markdown investment memo from the structured analysis and the underlying data.
+1. **Equity Research Assistant (`equity-research`)**: Gathers market metrics, fundamentals, and recent news in parallel; reasons over valuation and competitive moat; outputs a structured investment memo.
+2. **Portfolio & Risk Analytics (`portfolio`)**: Prices holdings CSV or inline positions; computes trailing returns, volatility, max drawdown, sector exposure, weighted beta, and concentration (HHI); narrating portfolio risk.
+3. **Financial Document Analysis (`doc-analysis`)**: Ingests 10-K filings, earnings releases, or PDFs; chunks with section headers; extracts key figures (Revenue, Net Income, Margins, Debt, EPS, Cash Flow) and risk disclosures with source citations.
+4. **Market & News Watchlist Monitor (`monitor`)**: Scans a universe of tickers; computes daily change and volatility outliers; aggregates headline catalysts; generates a structured market digest.
 
-Every data point is tagged `live` or `sample` so the output is always honest about its provenance.
+Every data point is tagged `live`, `file`, or `sample` so the output is always honest about its provenance.
 
 ---
 
@@ -55,8 +60,11 @@ pip install -e ".[live,dev]"
 # 3. Generate the bundled sample data (reproducible, seeded)
 python scripts/generate_samples.py
 
-# 4. Run the equity-research workflow — works offline, no API key needed
+# 4. Run any workflow — works offline, no API key needed
 finwf run equity-research --ticker AAPL --offline
+finwf run portfolio --holdings examples/sample_portfolio.csv --offline
+finwf run doc-analysis --ticker AAPL --offline
+finwf run monitor --tickers AAPL,MSFT,NVDA --offline
 ```
 
 To use Claude for real analysis, set your key first:
@@ -64,6 +72,8 @@ To use Claude for real analysis, set your key first:
 ```powershell
 $env:ANTHROPIC_API_KEY = "sk-ant-..."
 finwf run equity-research --ticker MSFT
+finwf run doc-analysis --file examples/sample_earnings_release.txt
+finwf run monitor --tickers AAPL,MSFT,NVDA
 ```
 
 List available workflows:
@@ -86,7 +96,7 @@ from langchain.chat_models import init_chat_model
 
 # provider inferred from the model name (claude-* -> anthropic, gpt-* -> openai, ...)
 llm = init_chat_model("claude-opus-4-8", max_tokens=4096)
-structured = llm.with_structured_output(AnalysisResult)  # validated Pydantic out
+structured = llm.with_structured_output(DocumentAnalysisResult)  # validated Pydantic out
 ```
 
 Pick a model with `FINWF_MODEL` (and `FINWF_MODEL_PROVIDER` when the name is
@@ -114,15 +124,26 @@ finance-agentic-workflow/
 │   ├── llm.py             # ChatAnthropic factory + availability check
 │   ├── registry.py        # workflow registry (name -> Workflow)
 │   ├── cli.py             # `finwf` command-line entry point
-│   ├── tools/             # data providers (live + sample fallback) and @tool wrappers
+│   ├── tools/             # data providers (MarketData, Fundamentals, News, Portfolio, Document, Monitor)
 │   └── workflows/
 │       ├── base.py            # Workflow ABC that every workflow implements
-│       ├── equity_research/   # first workflow (parallel gather → analyze → memo)
-│       └── portfolio/         # second workflow (load → metrics → narrate)
+│       ├── equity_research/   # parallel gather → analyze → memo
+│       ├── portfolio/         # load → compute metrics → narrate
+│       ├── doc_analysis/      # load → chunk → extract with citations → summarize
+│       └── monitor/           # scan universe → detect movers → digest
 ├── scripts/generate_samples.py   # reproducible sample-data generator
-├── examples/run_equity_research.py
-├── examples/run_portfolio.py
+├── examples/
+│   ├── run_equity_research.py
+│   ├── run_portfolio.py
+│   ├── run_doc_analysis.py
+│   └── run_monitor.py
 ├── tests/
+│   ├── test_equity_research.py
+│   ├── test_portfolio.py
+│   ├── test_doc_analysis.py
+│   ├── test_monitor.py
+│   ├── test_tools.py
+│   └── test_registry.py
 └── docs/
 ```
 
@@ -131,19 +152,17 @@ finance-agentic-workflow/
 ## Documentation
 
 - [docs/architecture.md](docs/architecture.md) — design, data flow, graph anatomy, design decisions.
-- [docs/workflows.md](docs/workflows.md) — the four planned workflows and their status.
+- [docs/workflows.md](docs/workflows.md) — the four workflows and their capabilities.
 - [docs/adding-a-workflow.md](docs/adding-a-workflow.md) — step‑by‑step guide to add your own.
 
 ## Status
 
-| Workflow | Status |
-|---|---|
-| Equity research assistant | ✅ Implemented |
-| Portfolio & risk analytics | ✅ Implemented |
-| Financial document analysis | 🚧 Planned |
-| Market & news monitor | 🚧 Planned |
-
-The framework (registry, tool layer, base classes, CLI) is built so the remaining two plug in without changing the core.
+| Workflow | Status | Description |
+|---|---|---|
+| Equity research assistant (`equity-research`) | ✅ Implemented | Parallel multi-source gather, structured analysis, and memo drafting. |
+| Portfolio & risk analytics (`portfolio`) | ✅ Implemented | Position weighting, risk metrics, concentration, and narration. |
+| Financial document analysis (`doc-analysis`) | ✅ Implemented | Chunking, key financial metric & risk extraction with source citations. |
+| Market & news monitor (`monitor`) | ✅ Implemented | Universe scanning, mover detection, headline feed, and watchlist digest. |
 
 ## License
 

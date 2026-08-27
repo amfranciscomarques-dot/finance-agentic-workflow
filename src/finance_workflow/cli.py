@@ -4,6 +4,9 @@
     finwf info equity-research                  # describe one workflow
     finwf run equity-research --ticker AAPL     # run it (uses Claude if a key is set)
     finwf run equity-research --ticker AAPL --offline   # deterministic, no key/network
+    finwf run portfolio --holdings examples/sample_portfolio.csv --offline
+    finwf run doc-analysis --ticker AAPL --offline
+    finwf run monitor --tickers AAPL,MSFT,NVDA --offline
 """
 from __future__ import annotations
 
@@ -86,6 +89,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             args.workflow,
             ticker=args.ticker,
             holdings=args.holdings,
+            file=args.file,
+            tickers=args.tickers,
             offline=args.offline,
             news_limit=args.news_limit,
         )
@@ -123,6 +128,21 @@ def _render_result(console, result) -> None:
                 f"As of: {meta.get('as_of')}   "
                 f"LLM: {'yes' if meta.get('used_llm') else 'no (deterministic)'}\n"
                 f"Sources: {meta.get('sources')}"
+            )
+        elif meta.get("label") == "doc-analysis":
+            summary = (
+                f"[bold]Financial Document Analysis: {meta.get('company')}"
+                f" ({meta.get('ticker') or 'N/A'})[/bold]\n"
+                f"Document Type: {meta.get('doc_type')} | Period: {meta.get('period')}\n"
+                f"Metrics Extracted: {meta.get('metrics_extracted')} | Risks: {meta.get('risk_factors_count')}\n"
+                f"LLM: {'yes' if meta.get('used_llm') else 'no (deterministic)'} | Sources: {meta.get('sources')}"
+            )
+        elif meta.get("label") == "monitor":
+            summary = (
+                f"[bold]Market & News Monitor Digest[/bold]\n"
+                f"Sentiment: [bold]{meta.get('market_sentiment')}[/bold] | Universe Size: {meta.get('universe_size')}\n"
+                f"Top Gainer: {meta.get('top_gainer')} | Top Loser: {meta.get('top_loser')}\n"
+                f"As of: {meta.get('as_of')} | LLM: {'yes' if meta.get('used_llm') else 'no (deterministic)'}"
             )
         else:  # generic summary for other workflows (e.g. portfolio)
             llm = "yes" if meta.get("used_llm") else "no (deterministic)"
@@ -177,10 +197,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_info.set_defaults(func=cmd_info)
 
     p_run = sub.add_parser("run", help="Run a workflow.")
-    p_run.add_argument("workflow", help="Workflow name, e.g. equity-research")
-    p_run.add_argument("--ticker", help="Ticker symbol, e.g. AAPL (equity-research)")
+    p_run.add_argument("workflow", help="Workflow name, e.g. equity-research, doc-analysis, monitor, portfolio")
+    p_run.add_argument("--ticker", help="Ticker symbol, e.g. AAPL (equity-research, doc-analysis)")
     p_run.add_argument(
         "--holdings", help="Path to a holdings CSV with ticker,shares columns (portfolio)"
+    )
+    p_run.add_argument(
+        "--file", help="Path to a financial document file (PDF, TXT, MD) (doc-analysis)"
+    )
+    p_run.add_argument(
+        "--tickers", help="Comma-separated ticker list, e.g. AAPL,MSFT,NVDA (monitor)"
     )
     p_run.add_argument(
         "--offline",

@@ -1,0 +1,31 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+Washington, D.C. 20549
+FORM 10-K
+ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934
+For the fiscal year ended June 30, 2025
+Commission File Number: 001-14278
+MICROSOFT CORPORATION
+
+ITEM 1. BUSINESS
+Microsoft Corporation is a global leader in technology, delivering software, cloud infrastructure (Azure), productivity platforms (Microsoft 365), and personal computing solutions.
+
+ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS
+Fiscal 2025 Financial Performance:
+- Revenue / Total Net Sales: Total revenue was $245,120 million in fiscal 2025, an increase of 15.5% compared to $211,915 million in fiscal 2024, driven by commercial cloud demand.
+- Gross Margin: Gross margin expanded to $170,858 million, achieving a 69.7% gross margin compared to $146,052 million (68.9%) in fiscal 2024.
+- Operating Income and Operating Margin: Operating income totaled $109,433 million, representing an operating margin of 44.6%, up 24% year-over-year.
+- Net Income: Net income reached $88,488 million (net profit margin of 36.1%), compared to $72,361 million in the prior fiscal year.
+- Diluted Earnings Per Share (EPS): Diluted earnings per share (EPS) was $11.86 per share, compared to $9.68 in fiscal 2024.
+- Cash Flow and Free Cash Flow: Operating cash flow reached $118,548 million. After capital expenditures of $44,500 million for cloud and AI datacenters, Free Cash Flow stood at $74,048 million.
+- Debt Position: Long-term debt and finance leases were $47,250 million, supported by cash and short-term investments of $75,500 million.
+
+ITEM 1A. RISK FACTORS
+Key risk considerations include:
+1. Intense Cloud & AI Competition: Fierce competition from other hyperscale cloud providers and AI foundation model builders could pressure pricing and market share. (Severity: High)
+2. Datacenter Infrastructure and Capital Intensity: High capital expenditures for AI infrastructure and specialized silicon availability constraints could depress returns on invested capital. (Severity: Medium)
+3. Cybersecurity and Platform Resilience: Sophisticated state-sponsored cyberattacks or cloud outages could disrupt enterprise operations and trigger severe regulatory penalties. (Severity: High)
+4. Regulatory and Antitrust Oversight: Scrutiny over AI partnerships, software bundling, and cross-border data sovereignty could impose compliance overhead and structural constraints. (Severity: Medium)
+5. Macroeconomic and Enterprise IT Spending: Slower global enterprise IT budget growth could lengthen sales cycles for cloud migrations and software renewals. (Severity: Medium)
+
+ITEM 7A. OUTLOOK AND GUIDANCE
+Management expects commercial cloud revenue to continue driving top-line growth, with ongoing AI investments expanding addressable software markets.

@@ -7,11 +7,21 @@ subclass in a submodule, then register it here. It will immediately appear in
 from __future__ import annotations
 
 from ..registry import registry
+from .doc_analysis import DocumentAnalysisWorkflow
 from .equity_research import EquityResearchWorkflow
+from .monitor import MonitorWorkflow
 from .portfolio import PortfolioWorkflow
 
 # Register built-in workflows (idempotent: this module is imported once).
 registry.register(EquityResearchWorkflow())
 registry.register(PortfolioWorkflow())
+registry.register(DocumentAnalysisWorkflow())
+registry.register(MonitorWorkflow())
 
-__all__ = ["registry"]
+__all__ = [
+    "registry",
+    "EquityResearchWorkflow",
+    "PortfolioWorkflow",
+    "DocumentAnalysisWorkflow",
+    "MonitorWorkflow",
+]

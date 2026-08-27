@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from finance_workflow.tools import FundamentalsProvider, MarketDataProvider, NewsProvider
+from finance_workflow.tools import (
+    DocumentProvider,
+    FundamentalsProvider,
+    MarketDataProvider,
+    MonitorProvider,
+    NewsProvider,
+)
+from finance_workflow.tools.langchain_tools import TOOLS
 
 
 def test_market_snapshot_from_sample():
@@ -27,3 +34,38 @@ def test_news_from_sample():
     assert news["source"] == "sample"
     assert len(news["items"]) == 2
     assert news["items"][0]["title"]
+
+
+def test_document_provider_deterministic_extraction():
+    provider = DocumentProvider(allow_live=False)
+    doc = provider.load_document(ticker="AAPL")
+    assert doc["source"] == "sample"
+    chunks = provider.chunk(doc["text"])
+    assert len(chunks) >= 2
+
+    metrics = provider.extract_metrics_deterministic(chunks, company_name="Apple Inc.", ticker="AAPL")
+    assert metrics["company_name"] == "Apple Inc."
+    assert len(metrics["key_metrics"]) >= 4
+    assert len(metrics["risk_factors"]) >= 2
+    # Verify citations
+    for m in metrics["key_metrics"]:
+        assert "[Chunk" in m["citation"]
+
+
+def test_monitor_provider_scan():
+    provider = MonitorProvider(allow_live=False)
+    scan = provider.scan_universe(["AAPL", "MSFT"])
+    assert scan["source"] == "sample"
+    assert scan["summary"]["total_tickers"] == 2
+    assert "movers" in scan
+    assert "news_feed" in scan
+
+
+def test_langchain_tools_bundle():
+    assert len(TOOLS) == 5
+    tool_names = {t.name for t in TOOLS}
+    assert "market_snapshot" in tool_names
+    assert "company_fundamentals" in tool_names
+    assert "recent_news" in tool_names
+    assert "document_analysis_extract" in tool_names
+    assert "market_monitor_scan" in tool_names

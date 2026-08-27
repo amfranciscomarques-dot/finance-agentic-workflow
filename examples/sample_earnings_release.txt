@@ -1,0 +1,24 @@
+APPLE REPORTS FOURTH QUARTER AND FISCAL 2025 RESULTS
+Cupertino, California — Apple today announced financial results for its fiscal 2025 fourth quarter and full fiscal year ended September 27, 2025.
+
+Executive Commentary:
+"Today Apple is reporting quarterly revenue of $94.9 billion, up 6 percent year-over-year, and record full-year revenue of $391.04 billion," said Tim Cook, Apple CEO. "Our active installed base of devices has reached a new all-time high across all products and all geographic segments, driven by customer satisfaction and loyalty."
+
+Full Fiscal Year 2025 Financial Summary:
+- Revenue / Total Net Sales: Total net sales reached $391,035 million compared to $383,285 million in fiscal 2024 (+2.0% YoY).
+- Gross Margin: Full-year gross margin was $180,683 million (46.2% gross margin).
+- Operating Income: Operating income totaled $123,216 million (operating margin of 31.5%).
+- Net Income: Net income reached $102,450 million for the year.
+- Diluted EPS: Earnings per diluted share was $6.75, up 10.5% from $6.11 in fiscal 2024.
+- Operating Cash Flow & Free Cash Flow: Operating cash flow generated was $118,254 million. Capital expenditures were $9,450 million, resulting in Free Cash Flow of $108,804 million.
+- Debt & Liquidity: Total term debt ended the year at $106,629 million against total cash and marketable securities of $156,652 million.
+
+Risk Factors & Operating Uncertainties:
+1. Global Supply Chain Disruptions: Reliance on concentrated overseas component manufacturers and assembly facilities presents production continuity risks. (Severity: High)
+2. Geopolitical and Trade Risks: Tariffs and export/import policy changes could increase production expenses and impact international sales margins. (Severity: High)
+3. Platform Competition & Rapid Technological Shifts: Competitive pressures in AI model deployment and device hardware features demand sustained R&D execution. (Severity: Medium)
+4. Regulatory & App Store Compliance: Antitrust reviews and compliance requirements under digital competition laws in multiple jurisdictions. (Severity: High)
+5. Cyber Vulnerabilities: Exposure to cybersecurity threats, cloud service interruptions, or customer data compromises. (Severity: Medium)
+
+Business Outlook:
+Management expects gross margin to be between 46.0 percent and 47.0 percent, with services continuing double-digit growth momentum.

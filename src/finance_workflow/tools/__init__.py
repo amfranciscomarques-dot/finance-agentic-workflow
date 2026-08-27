@@ -7,9 +7,18 @@ stay honest about provenance.
 """
 from __future__ import annotations
 
+from .document import DocumentProvider
 from .fundamentals import FundamentalsProvider
 from .market_data import MarketDataProvider
+from .monitor import MonitorProvider
 from .news import NewsProvider
 from .portfolio import PortfolioProvider
 
-__all__ = ["MarketDataProvider", "FundamentalsProvider", "NewsProvider", "PortfolioProvider"]
+__all__ = [
+    "MarketDataProvider",
+    "FundamentalsProvider",
+    "NewsProvider",
+    "PortfolioProvider",
+    "DocumentProvider",
+    "MonitorProvider",
+]

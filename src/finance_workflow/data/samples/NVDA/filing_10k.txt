@@ -1,0 +1,31 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+Washington, D.C. 20549
+FORM 10-K
+ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934
+For the fiscal year ended January 25, 2026
+Commission File Number: 000-26497
+NVIDIA CORPORATION
+
+ITEM 1. BUSINESS
+NVIDIA Corporation pioneered accelerated computing to tackle challenges no one else can solve. The company's platforms power generative AI, high-performance computing (HPC), gaming, and autonomous systems.
+
+ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS
+Fiscal 2026 Financial Highlights:
+- Revenue / Total Net Sales: Total revenue was $126,050 million, an increase of 61.2% year-over-year compared to $78,190 million in fiscal 2025, powered by Compute & Networking data center platforms.
+- Gross Margin: Gross margin was $94,537 million (75.0% gross margin), reflecting strong data center pricing power and full-stack software monetization.
+- Operating Income and Operating Margin: Operating income climbed to $78,151 million, generating an exceptional operating margin of 62.0%.
+- Net Income: Net income was $61,512 million (net profit margin of 48.8%), compared to $34,480 million in the previous fiscal year.
+- Diluted Earnings Per Share (EPS): Diluted earnings per share (EPS) surged to $2.48 per diluted share (post-split adjusted) from $1.39 in fiscal 2025.
+- Cash Flow and Free Cash Flow: Operating cash flow was $65,200 million. Capital expenditures were $3,100 million, producing Free Cash Flow of $62,100 million.
+- Balance Sheet and Debt: Total debt remained modest at $11,000 million, while cash, cash equivalents, and marketable securities reached $43,500 million.
+
+ITEM 1A. RISK FACTORS
+The Company's operations are subject to distinct operational and geopolitical risks:
+1. Customer and Channel Concentration: A significant portion of Compute revenue is concentrated among a small number of cloud service providers and tier-one hyperscalers. (Severity: High)
+2. Export Controls and Geopolitical Tensions: U.S. government licensing requirements and restrictions on shipping advanced GPUs to certain international regions impact revenue opportunities. (Severity: High)
+3. Advanced Packaging and Foundry Dependencies: The Company relies heavily on single or limited foundry partners (such as TSMC) for wafer fabrication and advanced CoWoS packaging. (Severity: High)
+4. AI Demand Volatility and Transition Cycles: Transitioning between GPU architecture generations (e.g. Hopper to Blackwell) may create product transition pauses or inventory adjustments. (Severity: Medium)
+5. Custom Silicon Competition: Major cloud customers developing internal ASIC accelerators could moderate long-term external GPU procurement growth. (Severity: Medium)
+
+ITEM 7A. OUTLOOK AND GUIDANCE
+Demand for accelerated computing and generative AI infrastructure remains strong across enterprise software, autonomous vehicles, and sovereign AI initiatives.
