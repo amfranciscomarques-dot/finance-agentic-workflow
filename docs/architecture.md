@@ -25,6 +25,39 @@ decisions are the point of the portfolio piece.
 - The CLI (and `examples/`) call `run_workflow(name, **params)`, which builds the
   graph, invokes it, and wraps the output in a `WorkflowResult`.
 
+## Local dashboard
+
+`finwf serve` runs a `ThreadingHTTPServer` on `127.0.0.1:8765`. Static assets in
+`web/` need no build step, CDN, or external font. The dashboard calls the same
+`run_workflow` entry point as the CLI; it does not duplicate workflow logic.
+
+- `GET /healthz` returns the app identity and readiness.
+- `GET /api/workflows` lists workflows, bundled tickers, and model availability.
+- `POST /api/run` accepts a workflow name plus its inputs and returns the memo,
+  rendered Markdown, metadata, and workflow-specific summary data.
+- Sample mode is the browser default. Raw HTML in generated Markdown is escaped.
+- Browser inputs use inline CSV/positions and document text rather than local
+  filesystem paths. Requests must use a local Host and same-origin browser Origin.
+- Request bodies are capped at 1 MB and at most two workflows execute concurrently.
+
+The dashboard is intended for a single user's local machine. Results remain in
+the browser's memory until downloaded. It is not a public deployment service.
+
+## Shared execution and inputs
+
+`runtime.runtime_options` resolves live-data access and LLM availability for
+every workflow. `FINWF_ALLOW_LIVE=0` now applies consistently to all four graphs,
+and offline runs short-circuit model availability checks. `inputs.py` normalizes
+symbols and deduplicates watchlists. The registry validates initial state before
+building a graph, so invalid requests fail early.
+
+Portfolio holdings are normalized and combined by ticker before pricing and
+weighting. Nonfinite share counts are rejected. Mixed live/sample price histories
+are labeled `mixed`. Document extraction leaves unmatched risk disclosures empty
+and explicitly reports missing management outlook rather than inventing citations.
+`results.save_result` separates CLI persistence from rendering and uses distinct
+UTC timestamps for automatic output paths.
+
 ## Graph Anatomy
 
 ### 1. Equity Research (`equity-research`)
@@ -76,8 +109,9 @@ sample, and always tag the `source`.**
 | `DocumentProvider` | file / PDF loader | `data/samples/<T>/filing_10k.txt` | doc payload, chunks, extracted metrics |
 | `MonitorProvider` | composes Market, Fund & News | bundled sample data | universe scan & mover rankings |
 
-Live failures (no network, bad ticker, `yfinance` not installed) are caught and
-silently downgraded to sample data — the workflow never hard-fails on data.
+Live failures (no network, bad ticker, `yfinance` not installed) fall back to
+bundled sample data when that ticker is available. Unsupported tickers without
+sample data produce an input/data error instead of a fabricated result.
 
 The same providers are also exposed as LangChain `@tool`s in
 `tools/langchain_tools.py`, ready for a tool-calling agent variant.

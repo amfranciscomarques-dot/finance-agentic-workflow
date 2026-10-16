@@ -22,7 +22,6 @@ from .prompts import (
 from .schema import DocumentAnalysisResult
 from .state import DocAnalysisState
 
-
 # --------------------------------------------------------------------------- #
 # Pipeline nodes
 # --------------------------------------------------------------------------- #

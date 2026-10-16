@@ -114,7 +114,7 @@ def llm_available() -> bool:
     return bool(os.getenv(env_var))
 
 
-def get_llm(**overrides: Any) -> "BaseChatModel":
+def get_llm(**overrides: Any) -> BaseChatModel:
     """Build a configured chat model for the workflow's reasoning nodes.
 
     Raises:

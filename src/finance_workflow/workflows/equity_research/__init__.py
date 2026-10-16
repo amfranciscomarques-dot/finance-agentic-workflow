@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...config import get_settings
-from ...llm import llm_available
+from ...inputs import normalize_ticker, validate_news_limit
+from ...runtime import runtime_options
 from ...tools.base import company_name
 from ...workflow import Workflow
 from .graph import build_graph
@@ -14,7 +14,7 @@ class EquityResearchWorkflow(Workflow):
     name = "equity-research"
     title = "Equity Research Assistant"
     description = (
-        "Gather market data, fundamentals, and news for a ticker, then have Claude "
+        "Gather market data, fundamentals, and news for a ticker, then "
         "draft a structured investment memo."
     )
 
@@ -28,17 +28,12 @@ class EquityResearchWorkflow(Workflow):
         news_limit: int = 5,
         **_: Any,
     ) -> dict[str, Any]:
-        settings = get_settings()
-        # `offline` forces both sample data and the deterministic analyst, for a
-        # fully reproducible, no-network, no-key run.
-        allow_live = settings.allow_live_data and not offline
-        use_llm = llm_available() and not offline
+        ticker = normalize_ticker(ticker)
         return {
-            "ticker": ticker.upper(),
+            "ticker": ticker,
             "company_name": company_name(ticker),
-            "allow_live": allow_live,
-            "use_llm": use_llm,
-            "news_limit": news_limit,
+            **runtime_options(offline),
+            "news_limit": validate_news_limit(news_limit),
         }
 
     def result_markdown(self, final_state: dict[str, Any]) -> str:

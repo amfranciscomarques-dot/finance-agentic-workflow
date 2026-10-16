@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111916">
+  <title>Finance Workflow — Research workspace</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/"><img src="/icon.svg" alt="" width="36" height="36"><span>Finance<span class="brand-sub">WORKFLOW</span></span></a>
+    <div class="nav-label">YOUR WORKSPACE</div>
+    <nav aria-label="Workflows">
+      <button class="nav-item active" data-workflow="equity-research"><span class="nav-icon">↗</span>Equity research<span class="nav-number">01</span></button>
+      <button class="nav-item" data-workflow="portfolio"><span class="nav-icon">◫</span>Portfolio analytics<span class="nav-number">02</span></button>
+      <button class="nav-item" data-workflow="doc-analysis"><span class="nav-icon">▤</span>Document analysis<span class="nav-number">03</span></button>
+      <button class="nav-item" data-workflow="monitor"><span class="nav-icon">⌁</span>Market monitor<span class="nav-number">04</span></button>
+    </nav>
+    <div class="sidebar-bottom"><div class="local-status"><span class="status-dot"></span>Local workspace</div><p>From source to insight.<br>Every step, traceable.</p><span class="version">FINANCE AGENTIC WORKFLOW / V0.1</span></div>
+  </aside>
+  <main>
+    <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <span id="breadcrumb-title">Equity research</span></span><span class="session-label"><span class="status-dot"></span>Ready to research</span></header>
+    <div class="page">
+      <div class="page-heading"><div><div class="eyebrow">THE ANALYST'S WORKSPACE</div><h1 id="page-title">A clearer view of your next idea.</h1><p id="page-description">Bring market data, fundamentals, and news into one research memo.</p></div><div class="engine-badge"><span class="engine-symbol">✧</span><div>Four connected workflows<span>One research workspace</span></div></div></div>
+      <section class="run-panel" aria-labelledby="configure-title">
+        <div class="panel-heading"><h2 id="configure-title"><span class="step-marker">01</span>Configure your research</h2><span class="tag" id="mode-label">SAMPLE DATA</span></div>
+        <form id="run-form">
+          <div class="form-row">
+            <div class="field" id="ticker-field"><label for="ticker">Company ticker</label><input id="ticker" name="ticker" value="AAPL" maxlength="20" list="sample-tickers" autocomplete="off" spellcheck="false"><datalist id="sample-tickers"></datalist></div>
+            <div class="field" id="watchlist-field" hidden><label for="watchlist">Watchlist</label><input id="watchlist" value="AAPL,MSFT,NVDA" spellcheck="false" autocomplete="off"></div>
+            <div class="field" id="news-field"><label for="news-limit">News headlines per company</label><select id="news-limit"><option value="3">3 headlines</option><option value="5" selected>5 headlines</option><option value="10">10 headlines</option></select></div>
+            <div class="field"><label for="execution-mode">Analysis mode</label><select id="execution-mode"><option value="sample">Sample data · deterministic</option><option value="live">Live data · configured model</option></select></div>
+            <button class="primary-button" id="run-button" type="submit"><span id="run-button-label">Run research</span><span aria-hidden="true">↗</span></button>
+          </div>
+          <div id="portfolio-fields" class="extended-fields" hidden><div class="input-heading"><label for="holdings">Holdings CSV</label><label class="file-button">Upload CSV<input id="holdings-upload" type="file" accept=".csv,text/csv" hidden></label></div><textarea id="holdings" rows="5" spellcheck="false">ticker,shares
+AAPL,120
+MSFT,60
+NVDA,200</textarea><p class="input-hint">Use ticker and shares columns. Repeated tickers are combined.</p></div>
+          <div id="document-fields" class="extended-fields" hidden><div class="input-heading"><label for="document">Financial document <span class="optional">optional</span></label><label class="file-button">Upload TXT / MD<input id="document-upload" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></label></div><textarea id="document" rows="6" placeholder="Paste a filing or earnings release here. Leave blank to analyze the bundled sample filing for your ticker."></textarea><p class="input-hint">Sample mode processes text locally. Live mode sends it to the configured model when enabled. The CLI also supports PDFs with pypdf installed.</p></div>
+          <div class="form-note"><span class="note-icon">ⓘ</span><span id="execution-note">Bundled AAPL, MSFT, and NVDA samples. No API key needed. These are demo data, not current prices.</span></div>
+        </form>
+        <div id="error" class="error-message" role="alert" hidden></div>
+      </section>
+      <section class="pipeline" aria-label="Workflow stages"><div class="pipeline-label">RESEARCH PATH</div><div id="pipeline-stages" class="pipeline-stages"></div><span class="pipeline-status" id="pipeline-status">Ready</span></section>
+      <div id="result-area" aria-live="polite">
+        <section class="empty-state" id="empty-state"><div class="empty-symbol">↗</div><div><h2>Your next insight starts here.</h2><p>Choose a company and run the workflow.<br>Your research memo and source details will appear below.</p></div><span class="empty-index">01 / 04</span></section>
+        <div id="loading-state" class="loading-state" hidden><div class="spinner"></div><div><h2 id="loading-title">Research in progress</h2><p>Gathering sources, running analysis, and preparing your report.</p></div></div>
+        <div id="results" hidden>
+          <div class="results-heading"><h2><span class="step-marker">02</span>Your research, connected.</h2><span id="run-time" class="muted"></span></div>
+          <div class="metric-grid" id="metric-grid"></div>
+          <div class="result-grid">
+            <article class="report-panel"><div class="report-toolbar"><div class="report-title"><span class="document-symbol">▤</span><div id="report-label">Investment memo<span id="report-company">AAPL</span></div></div><button id="download-button" class="secondary-button">Download .md <span aria-hidden="true">↓</span></button></div><div id="report" class="markdown-body"></div></article>
+            <aside class="insights-panel"><div class="panel-heading"><h2>At a glance</h2><span aria-hidden="true">↗</span></div><div id="insights"></div><div class="source-card"><div class="eyebrow">THE SOURCE TRAIL</div><div id="sources"></div><div id="analyst-label" class="analyst-label"></div></div></aside>
+          </div>
+        </div>
+      </div>
+      <footer><span>Built for thoughtful research.</span><span>Educational use · Review sources before making decisions.</span></footer>
+    </div>
+  </main>
+</body>
+</html>

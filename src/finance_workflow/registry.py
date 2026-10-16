@@ -53,8 +53,8 @@ def run_workflow(name: str, **params: Any) -> WorkflowResult:
     from . import workflows  # noqa: F401  (import for side effects)
 
     workflow = registry.get(name)
-    graph = workflow.build()
     state = workflow.initial_state(**params)
+    graph = workflow.build()
     final_state: dict[str, Any] = graph.invoke(state)
     return WorkflowResult(
         workflow=name,

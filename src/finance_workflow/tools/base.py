@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from ..config import get_settings
+from ..inputs import normalize_ticker
 
 
 def sample_path(ticker: str, filename: str) -> Path:
     """Path to a bundled sample file for ``ticker``."""
-    return get_settings().samples_dir / ticker.upper() / filename
+    return get_settings().samples_dir / normalize_ticker(ticker) / filename
 
 
 def load_sample_json(ticker: str, filename: str) -> Any:

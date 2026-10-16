@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..config import get_settings
+from ..inputs import normalize_tickers
 from .base import company_name, known_sample_tickers
 from .fundamentals import FundamentalsProvider
 from .market_data import MarketDataProvider
@@ -135,8 +136,6 @@ class MonitorProvider:
         }
 
     def _normalize_tickers(self, tickers: list[str] | str | None) -> list[str]:
-        if not tickers:
+        if tickers is None:
             return known_sample_tickers() or ["AAPL", "MSFT", "NVDA"]
-        if isinstance(tickers, str):
-            tickers = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-        return [str(t).strip().upper() for t in tickers if str(t).strip()]
+        return normalize_tickers(tickers)

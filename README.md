@@ -2,7 +2,7 @@
 
 > A documented, extensible **LangGraph** framework for building finance AI workflows — spanning autonomous **equity research**, **portfolio risk analytics**, **financial document analysis**, and a **market/news monitor**.
 
-This repository is a **portfolio project**. Its goal is to demonstrate how I design, document, and ship agentic AI workflows: clean graph orchestration, a pluggable tool/data layer with real‑API‑plus‑offline‑fallback, structured LLM outputs, and a CLI you can run end‑to‑end with **zero setup** (no API key, no internet — it falls back to bundled sample data and a deterministic analyst).
+This repository is a **portfolio project**. Its goal is to demonstrate how I design, document, and ship agentic AI workflows: clean graph orchestration, a pluggable tool/data layer with real‑API‑plus‑offline‑fallback, structured LLM outputs, and a CLI and browser dashboard you can run end‑to‑end **without API keys** (after installing dependencies, bundled sample data and a deterministic analyst work without internet).
 
 ---
 
@@ -47,7 +47,52 @@ Every data point is tagged `live`, `file`, or `sample` so the output is always h
 
 ## Quickstart
 
-> Requires Python 3.10+. Examples use Windows PowerShell; the same commands work on macOS/Linux with `python3` and `source .venv/bin/activate`.
+Requires Python 3.10+. Bundled sample data is already included.
+
+### Browser dashboard (Linux / macOS)
+
+With [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync --extra dev --extra live --frozen
+uv run --no-sync finwf serve --open
+```
+
+Or with pip:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e ".[live,dev]"
+.venv/bin/finwf serve --open
+```
+
+Open **http://127.0.0.1:8765**. The dashboard opens with an AAPL sample research
+memo and supports all four workflows, holdings CSV uploads, pasted or uploaded
+TXT/MD documents, source labels, and Markdown downloads. Sample mode is the
+default and never calls a data provider or model over the network. Live mode
+uses installed providers and your configured model, with sample/deterministic
+fallbacks reported in the result. The server listens only on the local machine.
+
+Use `finwf serve --port 8766` for another port. Stop a foreground server with Ctrl+C.
+Dashboard results stay in memory until downloaded; the CLI saves reports under
+`outputs/` with distinct UTC timestamps, or to an explicit `--output` path.
+
+On Omarchy / Linux with a systemd user session, install a desktop launcher:
+
+```bash
+.venv/bin/python scripts/install_local_app.py
+finance-workflow app
+finance-workflow status
+finance-workflow logs
+finance-workflow stop
+```
+
+The controller keeps the dashboard running as a user service after the browser
+closes. It starts on demand; opening **Finance Workflow** in the application menu
+starts it again after logout/reboot. All installed files live under `~/.local/`.
+The launcher points to this checkout, so keep the repository in place.
+
+### CLI (Windows PowerShell)
 
 ```powershell
 # 1. Create and activate a virtual environment
@@ -121,9 +166,14 @@ for the full design and [.env.example](.env.example) for all settings.
 finance-agentic-workflow/
 ├── src/finance_workflow/
 │   ├── config.py          # settings (env-driven)
-│   ├── llm.py             # ChatAnthropic factory + availability check
+│   ├── llm.py             # provider-agnostic model factory + availability check
+│   ├── runtime.py         # shared offline/live execution policy
+│   ├── inputs.py          # ticker and watchlist normalization
+│   ├── results.py         # report saving, shared by presentation layers
 │   ├── registry.py        # workflow registry (name -> Workflow)
 │   ├── cli.py             # `finwf` command-line entry point
+│   ├── dashboard.py       # loopback HTTP server + workflow API
+│   ├── web/               # dashboard HTML, CSS, and JavaScript (no build step)
 │   ├── tools/             # data providers (MarketData, Fundamentals, News, Portfolio, Document, Monitor)
 │   └── workflows/
 │       ├── base.py            # Workflow ABC that every workflow implements
@@ -154,6 +204,18 @@ finance-agentic-workflow/
 - [docs/architecture.md](docs/architecture.md) — design, data flow, graph anatomy, design decisions.
 - [docs/workflows.md](docs/workflows.md) — the four workflows and their capabilities.
 - [docs/adding-a-workflow.md](docs/adding-a-workflow.md) — step‑by‑step guide to add your own.
+
+## Development checks
+
+```bash
+uv run --no-sync pytest
+uv run --no-sync ruff check src tests scripts/install_local_app.py
+node --check src/finance_workflow/web/app.js
+```
+
+The tests include all four graphs, model fallback/provenance, shared runtime
+settings, duplicate holdings, document extraction, CLI saving, and real HTTP
+dashboard requests. HTTP tests need permission to bind a localhost socket.
 
 ## Status
 

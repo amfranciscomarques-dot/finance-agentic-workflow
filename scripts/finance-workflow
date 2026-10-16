@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Controller for the local dashboard. Symlink this script into ~/.local/bin.
+set -euo pipefail
+
+APP_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/.." && pwd)"
+APP_URL="http://127.0.0.1:8765"
+SERVICE_UNIT="finance-workflow.service"
+PYTHON="$APP_DIR/.venv/bin/python"
+
+start_dashboard() {
+  if [[ ! -x "$APP_DIR/.venv/bin/finwf" ]]; then
+    echo "Install dependencies first: cd $APP_DIR && uv sync --extra live" >&2
+    return 1
+  fi
+  if ! systemctl --user is-active --quiet "$SERVICE_UNIT"; then
+    systemd-run --user --unit=finance-workflow --collect \
+      --property="WorkingDirectory=$APP_DIR" \
+      --property=Restart=on-failure \
+      --property=RestartSec=2 \
+      "$APP_DIR/.venv/bin/finwf" serve --port 8765
+  fi
+  if ! "$PYTHON" - "$APP_URL" <<'PY'
+import json
+import sys
+import time
+from urllib.error import URLError
+from urllib.request import urlopen
+
+deadline = time.monotonic() + 12
+while time.monotonic() < deadline:
+    try:
+        with urlopen(sys.argv[1] + "/healthz", timeout=1) as response:
+            health = json.load(response)
+        if health == {"status": "ok", "app": "finance-workflow"}:
+            print(sys.argv[1])
+            sys.exit(0)
+    except (URLError, OSError, ValueError):
+        pass
+    time.sleep(0.25)
+sys.exit(1)
+PY
+  then
+    echo "Dashboard did not become ready. Recent service logs:" >&2
+    journalctl --user -u "$SERVICE_UNIT" -n 20 --no-pager >&2
+    return 1
+  fi
+}
+
+case "${1:-app}" in
+  start) start_dashboard ;;
+  stop) systemctl --user stop "$SERVICE_UNIT" ;;
+  status) systemctl --user status "$SERVICE_UNIT" --no-pager ;;
+  logs) journalctl --user -u "$SERVICE_UNIT" -n 80 --no-pager ;;
+  app)
+    start_dashboard
+    exec xdg-open "$APP_URL"
+    ;;
+  cli)
+    shift
+    cd -- "$APP_DIR"
+    exec "$APP_DIR/.venv/bin/finwf" "$@"
+    ;;
+  *)
+    echo "Usage: finance-workflow [app|start|stop|status|logs|cli <finwf arguments>]" >&2
+    exit 2
+    ;;
+esac

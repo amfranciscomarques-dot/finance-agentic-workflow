@@ -128,6 +128,8 @@ class DocumentProvider:
         chunk_overlap: int = 150,
     ) -> list[dict[str, Any]]:
         """Split document text into clean, indexed chunks with section headers."""
+        if chunk_size <= 0 or not 0 <= chunk_overlap < chunk_size:
+            raise ValueError("Require chunk_size > 0 and 0 <= chunk_overlap < chunk_size.")
         if not text.strip():
             return []
 
@@ -364,7 +366,7 @@ class DocumentProvider:
         exec_summary = (
             f"{summary_name} filed its {doc_type} for {period or 'the recent period'}. "
             f"The filing reveals revenue of {metrics[0]['value'] if metrics else 'undisclosed'}, "
-            f"healthy cash generation, and identified {len(risk_factors)} key risk areas. "
+            f"and the parser identified {len(risk_factors)} disclosed risk areas. "
             f"Extracted deterministically via offline document parser with chunk citations."
         )
 
@@ -423,21 +425,6 @@ class DocumentProvider:
                         }
                     )
 
-        if not risks:
-            risks = [
-                {
-                    "title": "Operational & Supply Chain Risks",
-                    "description": "Dependencies on specialized suppliers and complex global distribution channels.",
-                    "severity": "Medium",
-                    "citation": f"[Chunk {chunks[0]['chunk_id'] if chunks else 1}] General filing risk disclosure.",
-                },
-                {
-                    "title": "Regulatory and Market Scrutiny",
-                    "description": "Compliance with international competition, privacy, and tax regulations.",
-                    "severity": "Medium",
-                    "citation": f"[Chunk {chunks[0]['chunk_id'] if chunks else 1}] Item 1A Risk Factors summary.",
-                },
-            ]
         return risks
 
     @staticmethod
@@ -457,7 +444,7 @@ class DocumentProvider:
                         continue
                     if any(w in line.lower() for w in ("anticipates", "expects", "forecasts", "guidance", "momentum", "expansion", "growth", "demand")):
                         return line
-        return "Management anticipates steady operational execution and disciplined capital allocation across core growth segments."
+        return "No explicit management outlook was identified in this document."
 
     @staticmethod
     def _infer_doc_type(name: str, text: str) -> str:

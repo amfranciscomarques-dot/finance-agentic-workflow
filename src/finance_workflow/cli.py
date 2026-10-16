@@ -12,13 +12,12 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date
-from pathlib import Path
 
 from . import workflows  # noqa: F401 — import for side effect: registers workflows
 from .config import get_settings
 from .llm import llm_available, resolve_model_provider
 from .registry import registry, run_workflow
+from .results import save_result
 
 
 def _console():
@@ -26,7 +25,7 @@ def _console():
         from rich.console import Console
 
         return Console()
-    except Exception:  # pragma: no cover
+    except ImportError:  # pragma: no cover
         return None
 
 
@@ -43,7 +42,7 @@ def cmd_list(_: argparse.Namespace) -> int:
         console.print(table)
         model, provider = resolve_model_provider()
         label = f"{provider}:{model}" if provider else model
-        mode = f"{label} (API key set)" if llm_available() else "offline (no API key)"
+        mode = f"{label} (configured)" if llm_available() else "deterministic (no model key)"
         console.print(f"\nLLM mode: [bold]{mode}[/bold]")
     else:  # pragma: no cover
         for wf in registry.all():
@@ -78,8 +77,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     elif not llm_available():
         _print(
             console,
-            "[yellow]No ANTHROPIC_API_KEY found — falling back to the deterministic "
-            "analyst. Set the key (or use --offline) for Claude analysis.[/yellow]",
+            "[yellow]No API key found for the configured model — using the deterministic "
+            "analyst. Configure the provider key to enable model analysis.[/yellow]",
         )
 
     try:
@@ -94,7 +93,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             offline=args.offline,
             news_limit=args.news_limit,
         )
-    except KeyError as exc:  # unknown workflow
+        path = None if args.no_save else save_result(result, settings.output_dir, args.output)
+    except (KeyError, ValueError, FileNotFoundError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
     except Exception as exc:  # pragma: no cover - surface runtime errors cleanly
@@ -103,8 +103,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     _render_result(console, result)
 
-    if not args.no_save:
-        path = _save(result, settings.output_dir, args.output)
+    if path is not None:
         _print(console, f"\n[green]Saved memo to[/green] {path}")
     return 0
 
@@ -152,19 +151,6 @@ def _render_result(console, result) -> None:
         console.print(Markdown(result.markdown))
     else:  # pragma: no cover
         print(result.markdown)
-
-
-def _save(result, output_dir: Path, explicit: str | None) -> Path:
-    if explicit:
-        path = Path(explicit)
-    else:
-        stamp = date.today().isoformat()
-        ticker = result.metadata.get("ticker")
-        stem = f"{ticker}_{result.workflow}" if ticker else result.workflow
-        path = output_dir / f"{stem}_{stamp}.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(result.markdown, encoding="utf-8")
-    return path
 
 
 def _print(console, message: str) -> None:
@@ -221,7 +207,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-save", action="store_true", help="Do not write the memo to disk."
     )
     p_run.set_defaults(func=cmd_run)
+
+    p_serve = sub.add_parser("serve", help="Launch the local browser dashboard.")
+    p_serve.add_argument("--port", type=int, default=8765, help="Local port (default 8765).")
+    p_serve.add_argument("--open", action="store_true", help="Open the dashboard in a browser.")
+    p_serve.set_defaults(func=cmd_serve)
     return parser
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    from .dashboard import serve
+
+    try:
+        serve(port=args.port, open_browser=args.open)
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -19,6 +19,7 @@ from typing import Any
 import pandas as pd
 
 from ..config import get_settings
+from ..inputs import normalize_ticker
 from .base import company_name
 from .fundamentals import FundamentalsProvider
 from .market_data import TRADING_DAYS, MarketDataProvider
@@ -44,13 +45,21 @@ class PortfolioProvider:
         else:
             rows = list(source or [])
 
-        positions: list[dict[str, Any]] = []
+        shares_by_ticker: dict[str, float] = {}
         for row in rows:
-            ticker = str(row["ticker"]).strip().upper()
-            shares = float(row["shares"])
-            if not ticker or shares == 0:
-                continue
-            positions.append({"ticker": ticker, "shares": shares})
+            try:
+                ticker = normalize_ticker(row["ticker"])
+                shares = float(row["shares"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError("Each holding must have a valid ticker and numeric shares.") from exc
+            if not math.isfinite(shares):
+                raise ValueError(f"Shares for {ticker} must be finite.")
+            shares_by_ticker[ticker] = shares_by_ticker.get(ticker, 0.0) + shares
+        positions = [
+            {"ticker": ticker, "shares": shares}
+            for ticker, shares in shares_by_ticker.items()
+            if shares != 0
+        ]
         if not positions:
             raise ValueError(
                 "No valid positions found. Provide a list of {ticker, shares} or a CSV "
@@ -72,6 +81,7 @@ class PortfolioProvider:
     # -- metrics ----------------------------------------------------------- #
     def metrics(self, positions: list[dict[str, Any]]) -> dict[str, Any]:
         """Compute position- and portfolio-level analytics."""
+        positions = self.load_positions(positions)
         close_by_ticker: dict[str, pd.Series] = {}
         sources: set[str] = set()
         enriched: list[dict[str, Any]] = []
@@ -110,7 +120,7 @@ class PortfolioProvider:
         value_series = _portfolio_value_series(close_by_ticker, positions)
 
         return {
-            "source": "live" if sources == {"live"} else ("sample" if "sample" in sources else "mixed"),
+            "source": "live" if sources == {"live"} else ("sample" if sources == {"sample"} else "mixed"),
             "as_of": value_series.index[-1].date().isoformat() if not value_series.empty else None,
             "total_value": round(total_value, 2),
             "positions": sorted(enriched, key=lambda p: p["weight"], reverse=True),

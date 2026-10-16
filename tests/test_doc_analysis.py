@@ -36,6 +36,15 @@ def test_offline_run_produces_memo():
     assert "Educational and analytical use only" in memo
 
 
+def test_unrecognized_document_does_not_invent_disclosures():
+    provider = DocumentProvider(allow_live=False)
+    analysis = provider.extract_metrics_deterministic(provider.chunk("A brief company notice."))
+    assert analysis["key_metrics"] == []
+    assert analysis["risk_factors"] == []
+    assert "No explicit management outlook" in analysis["outlook"]
+    assert "healthy cash generation" not in analysis["executive_summary"]
+
+
 def test_run_with_custom_file():
     doc_path = Path(__file__).resolve().parents[1] / "examples" / "sample_earnings_release.txt"
     result = run_workflow("doc-analysis", file=str(doc_path), offline=True)

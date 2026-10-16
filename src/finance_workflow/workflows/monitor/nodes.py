@@ -21,7 +21,6 @@ from .prompts import (
 from .schema import MarketMonitorDigest, TickerMoverNote
 from .state import MonitorState
 
-
 # --------------------------------------------------------------------------- #
 # Pipeline nodes
 # --------------------------------------------------------------------------- #

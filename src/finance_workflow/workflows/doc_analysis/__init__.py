@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...llm import llm_available
+from ...inputs import normalize_ticker
+from ...runtime import runtime_options
 from ...workflow import Workflow
 from .graph import build_graph
 
@@ -35,11 +36,12 @@ class DocumentAnalysisWorkflow(Workflow):
         **_: Any,
     ) -> dict[str, Any]:
         source = file or doc
+        if chunk_size <= 0 or not 0 <= chunk_overlap < chunk_size:
+            raise ValueError("Require chunk_size > 0 and 0 <= chunk_overlap < chunk_size.")
         return {
             "document_source": source,
-            "ticker": ticker.upper() if ticker else None,
-            "allow_live": not offline,
-            "use_llm": llm_available() and not offline,
+            "ticker": normalize_ticker(ticker) if ticker else None,
+            **runtime_options(offline),
             "chunk_size": chunk_size,
             "chunk_overlap": chunk_overlap,
         }

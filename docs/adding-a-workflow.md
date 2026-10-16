@@ -85,8 +85,9 @@ class MyWorkflow(Workflow):
     def build(self): return build_graph()
 
     def initial_state(self, symbol: str, offline: bool = False, **_: Any) -> dict:
-        from ...llm import llm_available
-        return {"symbol": symbol.upper(), "use_llm": llm_available() and not offline}
+        from ...inputs import normalize_ticker
+        from ...runtime import runtime_options
+        return {"symbol": normalize_ticker(symbol), **runtime_options(offline)}
 
     def result_markdown(self, final_state: dict) -> str:
         return final_state.get("result", "")
@@ -104,6 +105,11 @@ registry.register(MyWorkflow())
 ```
 
 Now it appears in `finwf list` and runs via `finwf run my-workflow --ticker ...`.
+
+For browser support, add the workflow's input mapping in `dashboard.request_params`,
+its summary data in `dashboard.execute_request`, and a form/result view in `web/app.js`.
+The API catalog lists all registered workflows; custom workflows require a form
+mapping before they can execute from the dashboard.
 
 ## 7. Test it
 

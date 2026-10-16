@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...llm import llm_available
+from ...runtime import runtime_options
 from ...workflow import Workflow
 from .graph import build_graph
 
@@ -19,7 +19,7 @@ class PortfolioWorkflow(Workflow):
     title = "Portfolio & Risk Analytics"
     description = (
         "Take a holdings file (or inline positions), compute returns, volatility, "
-        "drawdown, exposures, and concentration, then have Claude narrate the risks."
+        "drawdown, exposures, and concentration, then narrate the risks."
     )
 
     def build(self) -> Any:
@@ -39,8 +39,7 @@ class PortfolioWorkflow(Workflow):
             raise ValueError("Provide `positions` (a list) or `holdings` (a CSV path).")
         return {
             "holdings_source": source,
-            "allow_live": not offline,
-            "use_llm": llm_available() and not offline,
+            **runtime_options(offline),
         }
 
     def result_markdown(self, final_state: dict[str, Any]) -> str:

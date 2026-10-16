@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...llm import llm_available
+from ...inputs import normalize_tickers, validate_news_limit
+from ...runtime import runtime_options
 from ...workflow import Workflow
 from .graph import build_graph
 
@@ -33,19 +34,13 @@ class MonitorWorkflow(Workflow):
         news_limit: int = 3,
         **_: Any,
     ) -> dict[str, Any]:
-        target = tickers or watchlist
-        if isinstance(target, str):
-            target_list = [t.strip().upper() for t in target.split(",") if t.strip()]
-        elif isinstance(target, (list, tuple, set)):
-            target_list = [str(t).strip().upper() for t in target if str(t).strip()]
-        else:
-            target_list = ["AAPL", "MSFT", "NVDA"]
+        target = tickers if tickers is not None else watchlist
+        target_list = normalize_tickers(target if target is not None else ["AAPL", "MSFT", "NVDA"])
 
         return {
             "tickers": target_list,
-            "allow_live": not offline,
-            "use_llm": llm_available() and not offline,
-            "news_limit": news_limit,
+            **runtime_options(offline),
+            "news_limit": validate_news_limit(news_limit),
         }
 
     def result_markdown(self, final_state: dict[str, Any]) -> str:

@@ -8,7 +8,7 @@ from __future__ import annotations
 try:  # pragma: no cover - presentation only
     from rich.console import Console
 
-    _console: "Console | None" = Console()
+    _console: Console | None = Console()
 except Exception:  # pragma: no cover
     _console = None
 

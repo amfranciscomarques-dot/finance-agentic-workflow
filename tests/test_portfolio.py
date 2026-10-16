@@ -60,6 +60,36 @@ def test_empty_positions_raise():
         PortfolioProvider(allow_live=False).load_positions([])
 
 
+def test_duplicate_holdings_have_the_same_metrics_as_combined_positions():
+    provider = PortfolioProvider(allow_live=False)
+    combined = [{"ticker": "AAPL", "shares": 30}, {"ticker": "MSFT", "shares": 10}]
+    duplicated = [
+        {"ticker": " aapl ", "shares": 10},
+        {"ticker": "AAPL", "shares": 20},
+        {"ticker": "MSFT", "shares": 10},
+    ]
+    assert provider.metrics(duplicated) == provider.metrics(combined)
+
+
+@pytest.mark.parametrize("shares", [float("nan"), float("inf"), -float("inf")])
+def test_nonfinite_holdings_rejected(shares):
+    with pytest.raises(ValueError, match="finite"):
+        PortfolioProvider(allow_live=False).load_positions([{"ticker": "AAPL", "shares": shares}])
+
+
+def test_mixed_price_sources_are_labeled_mixed(monkeypatch):
+    provider = PortfolioProvider(allow_live=False)
+    sample_history = provider.market.get_price_history
+
+    def mixed_history(ticker):
+        frame, _ = sample_history(ticker)
+        return frame, "live" if ticker == "AAPL" else "sample"
+
+    monkeypatch.setattr(provider.market, "get_price_history", mixed_history)
+    metrics = provider.metrics(POSITIONS)
+    assert metrics["source"] == "mixed"
+
+
 def test_graph_runs_end_to_end():
     state = build_graph().invoke(
         {"holdings_source": POSITIONS, "allow_live": False, "use_llm": False}
